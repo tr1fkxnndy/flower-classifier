@@ -1,0 +1,474 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Flower Classifier</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9, #fce4ec);
+            min-height: 100vh;
+            padding: 30px 15px;
+            color: #263238;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #287a46;
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        header p {
+            color: #777;
+            line-height: 1.6;
+        }
+
+        .upload-area {
+            border: 2px dashed #58a477;
+            background: #f5fbf6;
+            border-radius: 15px;
+            padding: 35px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            background: #e4f4e8;
+            border-color: #287a46;
+        }
+
+        .upload-icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            color: #287a46;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview {
+            display: none;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: 12px;
+            object-fit: contain;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #287a46;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+
+        .button:hover {
+            background: #1d6036;
+        }
+
+        .button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results h2 {
+            color: #287a46;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .prediction {
+            background: #f4f9f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .prediction-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .bar {
+            height: 10px;
+            background: #dce8df;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #43a568;
+            border-radius: 10px;
+        }
+
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #ffebee;
+            color: #c62828;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #287a46;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-top: 30px;
+        }
+
+        @media(max-width: 500px) {
+            .container {
+                padding: 22px;
+            }
+
+            header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>Flower Classifier</h1>
+        <p>
+            Discover the beauty of flowers with Artificial Intelligence.
+            Upload a flower image and let our AI identify it.
+        </p>
+    </header>
+
+    <!-- Upload Area -->
+    <div class="upload-area" id="uploadArea">
+
+        <div class="upload-icon">🌸</div>
+
+        <h3>Upload Your Flower Image</h3>
+
+        <p>Click here or drag and drop an image</p>
+
+        <p style="margin-top:10px;">
+            JPG, JPEG, PNG, WEBP or BMP
+        </p>
+
+        <input type="file"
+               id="imageInput"
+               accept="image/jpeg,image/png,image/webp,image/bmp">
+
+    </div>
+
+    <!-- Image Preview -->
+    <div class="preview" id="preview">
+
+        <img id="previewImage" src="" alt="Flower preview">
+
+        <p class="file-name" id="fileName"></p>
+
+    </div>
+
+    <!-- Predict Button -->
+    <button class="button"
+            id="predictButton"
+            disabled>
+        Identify Flower
+    </button>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        Analyzing your flower image...
+    </div>
+
+    <!-- Error -->
+    <div class="error" id="error"></div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+
+        <h2>Prediction Results</h2>
+
+        <div id="predictionList"></div>
+
+    </div>
+
+    <footer>
+        <p>Flower Classifier | Powered by AI & MobileNetV2</p>
+    </footer>
+
+</div>
+
+
+<script>
+
+    const uploadArea = document.getElementById("uploadArea");
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const previewImage = document.getElementById("previewImage");
+    const fileName = document.getElementById("fileName");
+    const predictButton = document.getElementById("predictButton");
+    const loading = document.getElementById("loading");
+    const results = document.getElementById("results");
+    const predictionList = document.getElementById("predictionList");
+    const errorBox = document.getElementById("error");
+
+    let selectedFile = null;
+
+    // Open file selector
+    uploadArea.addEventListener("click", () => {
+        imageInput.click();
+    });
+
+    // File selection
+    imageInput.addEventListener("change", (event) => {
+        if (event.target.files.length > 0) {
+            handleFile(event.target.files[0]);
+        }
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        uploadArea.classList.add("dragover");
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+    });
+
+    uploadArea.addEventListener("drop", (event) => {
+        event.preventDefault();
+        uploadArea.classList.remove("dragover");
+
+        const file = event.dataTransfer.files[0];
+
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    // Handle selected image
+    function handleFile(file) {
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/bmp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            showError("Please select a JPG, PNG, WEBP or BMP image.");
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            showError("Image must be smaller than 10 MB.");
+            return;
+        }
+
+        selectedFile = file;
+
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+
+            previewImage.src = event.target.result;
+
+            preview.style.display = "block";
+
+            fileName.textContent = file.name;
+
+            predictButton.disabled = false;
+
+            results.style.display = "none";
+
+            errorBox.style.display = "none";
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+    // Predict flower
+    predictButton.addEventListener("click", async () => {
+
+        if (!selectedFile) {
+            showError("Please upload an image first.");
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("image", selectedFile);
+
+        loading.style.display = "block";
+
+        results.style.display = "none";
+
+        errorBox.style.display = "none";
+
+        predictButton.disabled = true;
+
+        try {
+
+            const response = await fetch("/predict", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Prediction failed.");
+            }
+
+            displayResults(data.predictions);
+
+        } catch (error) {
+
+            showError(error.message);
+
+        } finally {
+
+            loading.style.display = "none";
+
+            predictButton.disabled = false;
+
+        }
+
+    });
+
+    // Display predictions
+    function displayResults(predictions) {
+
+        predictionList.innerHTML = "";
+
+        predictions.forEach((item, index) => {
+
+            const percentage = Number(item.confidence);
+
+            const prediction = document.createElement("div");
+
+            prediction.className = "prediction";
+
+            const top = document.createElement("div");
+            top.className = "prediction-top";
+
+            const name = document.createElement("span");
+            name.textContent = `${index + 1}. ${item.label}`;
+
+            const confidence = document.createElement("span");
+            confidence.textContent = `${percentage.toFixed(2)}%`;
+
+            top.appendChild(name);
+            top.appendChild(confidence);
+
+            const bar = document.createElement("div");
+            bar.className = "bar";
+
+            const fill = document.createElement("div");
+            fill.className = "bar-fill";
+            fill.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+
+            bar.appendChild(fill);
+
+            prediction.appendChild(top);
+            prediction.appendChild(bar);
+
+            predictionList.appendChild(prediction);
+
+        });
+
+        results.style.display = "block";
+
+    }
+
+    // Show error
+    function showError(message) {
+
+        errorBox.textContent = message;
+
+        errorBox.style.display = "block";
+
+    }
+
+</script>
+
+</body>
+</html>
